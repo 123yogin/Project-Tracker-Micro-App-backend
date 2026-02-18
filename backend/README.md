@@ -1,111 +1,123 @@
-# Project Tracker Backend (Flask)
+# Project Tracker — Full Stack
 
-Production-ready Flask REST backend for a Project Tracker micro-application.
+Production-ready full-stack Project Tracker micro-application.
 
-## Tech Stack
+## Architecture
 
-- Python 3.11+
-- Flask
-- Flask-SQLAlchemy
-- Flask-Migrate (Alembic)
-- Flask-JWT-Extended
-- SQLite (`sqlite:///project_tracker.db`)
+| Layer | Tech |
+|-------|------|
+| **Frontend** | React 18, Vite 5, React Router 6 |
+| **Backend** | Python 3.12, Flask 3, SQLAlchemy, Marshmallow |
+| **Auth** | JWT (access + refresh tokens, revocation) |
+| **Database** | SQLite (drop-in replaceable with PostgreSQL) |
+| **Deployment** | Docker, Gunicorn, Nginx |
 
 ## Project Structure
 
-```text
-backend/
+```
+├── docker-compose.yml
+├── .gitignore
 │
-├── app/
-│   ├── __init__.py
-│   ├── extensions.py
-│   ├── models/
-│   │   ├── user.py
-│   │   ├── project.py
-│   │   └── task.py
-│   ├── routes/
-│   │   ├── auth_routes.py
-│   │   ├── project_routes.py
-│   │   └── task_routes.py
-│   └── config.py
+├── Project-Tracker-Micro-App-backend/backend/
+│   ├── app/
+│   │   ├── __init__.py          # App factory, error handlers, security headers
+│   │   ├── config.py            # Env-based configuration
+│   │   ├── constants.py         # Shared enums (task status/priority)
+│   │   ├── extensions.py        # Flask extensions (DB, JWT, CORS, Limiter)
+│   │   ├── models/              # SQLAlchemy models
+│   │   │   ├── user.py
+│   │   │   ├── project.py
+│   │   │   └── task.py
+│   │   ├── schemas/             # Marshmallow validation schemas
+│   │   │   ├── auth_schema.py
+│   │   │   ├── project_schema.py
+│   │   │   └── task_schema.py
+│   │   ├── services/            # Business logic layer
+│   │   │   ├── base.py          # Shared ownership and pagination helpers
+│   │   │   ├── auth_service.py
+│   │   │   ├── project_service.py
+│   │   │   └── task_service.py
+│   │   ├── routes/              # Thin API controllers
+│   │   │   ├── auth_routes.py
+│   │   │   ├── project_routes.py
+│   │   │   └── task_routes.py
+│   │   └── utils/               # Exceptions, logging, response helpers
+│   │       ├── exceptions.py
+│   │       ├── logging_config.py
+│   │       └── responses.py
+│   ├── migrations/              # Alembic migrations
+│   ├── Dockerfile
+│   ├── .dockerignore
+│   ├── .env.example
+│   ├── gunicorn.conf.py
+│   ├── wsgi.py
+│   ├── run.py                   # Dev-only entry point
+│   └── requirements.txt
 │
-├── migrations/
-├── run.py
-├── requirements.txt
-└── README.md
+└── Project-Tracker-Micro-App-frontend/frontend/
+    ├── src/
+    │   ├── api/axios.js         # Axios instance with interceptors
+    │   ├── context/AuthContext.jsx
+    │   ├── components/          # Reusable UI components
+    │   ├── pages/               # Route-level pages
+    │   └── styles/global.css
+    ├── Dockerfile
+    ├── .dockerignore
+    ├── .env.example
+    ├── nginx.conf
+    ├── vite.config.js
+    └── package.json
 ```
 
-## Setup
+## Quick Start (Development)
 
-1. Create and activate a virtual environment.
-2. Install dependencies:
+### Backend
 
 ```bash
+cd Project-Tracker-Micro-App-backend/backend
+cp .env.example .env       # Fill in JWT_SECRET_KEY and SECRET_KEY
 pip install -r requirements.txt
-```
-
-3. Export Flask app entrypoint:
-
-```bash
-export FLASK_APP=run.py
-```
-
-4. Initialize and apply migrations:
-
-```bash
-flask db init
-flask db migrate -m "initial migration"
 flask db upgrade
+python run.py              # Starts on http://localhost:5001
 ```
 
-5. Run server:
+### Frontend
 
 ```bash
-python run.py
+cd Project-Tracker-Micro-App-frontend/frontend
+cp .env.example .env
+npm install
+npm run dev                # Starts on http://localhost:5173
 ```
 
-## Authentication API
+## Production (Docker)
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-
-### Register payload
-
-```json
-{
-  "email": "user@example.com",
-  "password": "StrongPassword123"
-}
+```bash
+# From project root
+docker compose up --build -d
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:5001
 ```
 
-### Login payload
+## API Endpoints
 
-```json
-{
-  "email": "user@example.com",
-  "password": "StrongPassword123"
-}
-```
+| Method | Endpoint | Auth | Rate Limit |
+|--------|----------|------|------------|
+| POST | `/api/auth/register` | — | 10/hour |
+| POST | `/api/auth/login` | — | 5/minute |
+| POST | `/api/auth/refresh` | Refresh Token | — |
+| POST | `/api/auth/logout` | Bearer Token | — |
+| GET | `/api/projects` | Bearer Token | 200/hour |
+| POST | `/api/projects` | Bearer Token | 200/hour |
+| GET | `/api/projects/:id` | Bearer Token | 200/hour |
+| PUT | `/api/projects/:id` | Bearer Token | 200/hour |
+| DELETE | `/api/projects/:id` | Bearer Token | 200/hour |
+| POST | `/api/tasks` | Bearer Token | 200/hour |
+| GET | `/api/tasks/:project_id` | Bearer Token | 200/hour |
+| PUT | `/api/tasks/:id` | Bearer Token | 200/hour |
+| DELETE | `/api/tasks/:id` | Bearer Token | 200/hour |
+| GET | `/health` | — | — |
 
-> Pass JWT token in `Authorization: Bearer <token>` for protected routes.
+## Environment Variables
 
-## Project API (JWT required)
-
-- `POST /api/projects`
-- `GET /api/projects`
-- `GET /api/projects/<id>`
-- `PUT /api/projects/<id>`
-- `DELETE /api/projects/<id>`
-
-## Task API (JWT required)
-
-- `POST /api/tasks`
-- `GET /api/tasks/<project_id>`
-- `PUT /api/tasks/<id>`
-- `DELETE /api/tasks/<id>`
-
-## Notes
-
-- Passwords are hashed with `werkzeug.security`.
-- Endpoints enforce ownership so users can only access their own projects/tasks.
-- Global JSON error handlers for 404 and 500 responses.
+See `.env.example` files in backend and frontend directories.

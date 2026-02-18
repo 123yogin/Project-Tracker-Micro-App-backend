@@ -1,0 +1,10 @@
+{
+    "executionEnvironments": [
+        {
+            "root": ".",
+            "pythonVersion": "3.14"
+        }
+    ],
+    "venvPath": "",
+    "pythonPlatform": "Windows"
+}

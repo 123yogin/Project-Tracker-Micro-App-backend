@@ -1,5 +1,10 @@
-Flask
-Flask-SQLAlchemy
-Flask-Migrate
-Flask-JWT-Extended
-python-dotenv
+Flask~=3.1.0
+Flask-SQLAlchemy~=3.1.1
+Flask-Migrate~=4.0.7
+Flask-JWT-Extended~=4.7.1
+flask-cors~=5.0.1
+python-dotenv~=1.0.1
+gunicorn~=23.0.0
+marshmallow~=3.23.0
+flask-limiter~=3.9.0
+Werkzeug~=3.1.0

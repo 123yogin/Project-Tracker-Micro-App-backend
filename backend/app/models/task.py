@@ -1,5 +1,8 @@
-from datetime import datetime
+"""Task model with indexed FK."""
 
+from datetime import datetime, timezone
+
+from app.constants import TASK_PRIORITIES, TASK_STATUSES  # noqa: F401 – re-export for backwards compat
 from app.extensions import db
 
 
@@ -12,8 +15,17 @@ class Task(db.Model):
     status = db.Column(db.String(50), default="pending", nullable=False)
     priority = db.Column(db.String(50), nullable=True)
     due_date = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    project_id = db.Column(db.Integer, db.ForeignKey("projects.id"), nullable=False)
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    project_id = db.Column(
+        db.Integer,
+        db.ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     project = db.relationship("Project", back_populates="tasks")
 
