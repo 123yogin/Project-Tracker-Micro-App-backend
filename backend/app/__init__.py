@@ -5,8 +5,12 @@ from flask import Flask, jsonify
 from app.config import Config
 from app.extensions import configure_jwt_blocklist, cors, db, jwt, limiter, migrate
 from app.routes.auth_routes import auth_bp
+from app.routes.comment_routes import comment_bp
+from app.routes.notification_routes import notification_bp
 from app.routes.project_routes import project_bp
+from app.routes.search_routes import search_bp
 from app.routes.task_routes import task_bp
+from app.routes.user_routes import user_bp
 from app.utils.exceptions import AppError, ValidationError
 from app.utils.logging_config import setup_logging
 
@@ -40,12 +44,16 @@ def create_app(config_class=Config):
     setup_logging(app)
 
     # ── Import models for Alembic ───────────────────────────────
-    from app.models import Project, Task, User  # noqa: F401
+    from app.models import ActivityLog, Comment, Notification, Project, Task, User  # noqa: F401
 
     # ── Register blueprints ─────────────────────────────────────
     app.register_blueprint(auth_bp)
-    app.register_blueprint(project_bp)
-    app.register_blueprint(task_bp)
+    app.register_blueprint(comment_bp)
+    app.register_blueprint(notification_bp)
+    app.register_blueprint(project_bp, url_prefix="/api/projects")
+    app.register_blueprint(task_bp, url_prefix="/api/tasks")
+    app.register_blueprint(user_bp, url_prefix="/api/users")
+    app.register_blueprint(search_bp, url_prefix="/api/search")
 
     # ── Health check ────────────────────────────────────────────
     @app.get("/health")

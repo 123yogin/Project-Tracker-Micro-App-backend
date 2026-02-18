@@ -5,6 +5,7 @@ import logging
 from app.extensions import db
 from app.models.project import Project
 from app.models.task import Task
+from app.services.activity_service import ActivityService
 from app.services.base import get_user_project_or_404, paginate_query
 from app.utils.exceptions import NotFoundError
 
@@ -39,6 +40,10 @@ class TaskService:
         )
         db.session.add(task)
         db.session.commit()
+        ActivityService.log(
+            user_id, "created", "task", task.id, 
+            {"title": task.title, "project": project.name}
+        )
         logger.info("Task created: id=%s project_id=%s", task.id, project.id)
         return task.to_dict()
 
@@ -59,24 +64,33 @@ class TaskService:
     def update(task_id: int, user_id: int, data: dict) -> dict:
         task = _get_user_task(task_id, user_id)
 
+        action = "updated"
+        details = {}
+
         if "title" in data:
             task.title = data["title"]
         if "description" in data:
             task.description = data["description"]
         if "status" in data:
+            if data["status"] == "completed" and task.status != "completed":
+                action = "completed"
             task.status = data["status"]
+            details["status"] = data["status"]
         if "priority" in data:
             task.priority = data["priority"]
         if "due_date" in data:
             task.due_date = data["due_date"]
 
         db.session.commit()
+        ActivityService.log(user_id, action, "task", task.id, {"title": task.title, **details})
         logger.info("Task updated: id=%s", task_id)
         return task.to_dict()
 
     @staticmethod
     def delete(task_id: int, user_id: int) -> None:
         task = _get_user_task(task_id, user_id)
+        title_snapshot = task.title
         db.session.delete(task)
         db.session.commit()
+        ActivityService.log(user_id, "deleted", "task", task_id, {"title": title_snapshot})
         logger.info("Task deleted: id=%s", task_id)

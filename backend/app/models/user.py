@@ -12,18 +12,28 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    full_name = db.Column(db.String(100), nullable=True)  # Added for SaaS profile
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(
         db.DateTime,
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+    last_login = db.Column(db.DateTime, nullable=True)  # Added for security audit
 
     projects = db.relationship(
         "Project",
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="select",
+    )
+    
+    activities = db.relationship(
+        "ActivityLog",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="select",
+        order_by="desc(ActivityLog.timestamp)"
     )
 
     def set_password(self, password: str) -> None:
@@ -38,5 +48,7 @@ class User(db.Model):
         return {
             "id": self.id,
             "email": self.email,
+            "full_name": self.full_name,
             "created_at": self.created_at.isoformat(),
+            "last_login": self.last_login.isoformat() if self.last_login else None,
         }

@@ -28,6 +28,13 @@ class Task(db.Model):
     )
 
     project = db.relationship("Project", back_populates="tasks")
+    comments = db.relationship(
+        "Comment",
+        back_populates="task",
+        cascade="all, delete-orphan",
+        lazy="select",
+        order_by="asc(Comment.created_at)"
+    )
 
     def to_dict(self) -> dict:
         return {
