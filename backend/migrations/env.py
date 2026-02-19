@@ -109,13 +109,16 @@ def run_migrations_online():
     if conf_args.get("process_revision_directives") is None:
         conf_args["process_revision_directives"] = process_revision_directives
 
+    # Ensure batch mode is on for SQLite (use setdefault to avoid
+    # conflicting with Flask-Migrate if it already sets this key).
+    conf_args.setdefault("render_as_batch", True)
+
     connectable = get_engine()
 
     with connectable.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=get_metadata(),
-            render_as_batch=True,
             **conf_args
         )
 
